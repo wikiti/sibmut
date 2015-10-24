@@ -1,0 +1,187 @@
+<!doctype html public "-//ietf//dtd html 2.0//en">
+<html>
+<head>
+  <!-- Data -->
+  <title>Umbrella</title>
+  <link rel="shortcut icon" type="image/png" href="img/favicon.png" />
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="css/global.css">
+
+  <!-- Javascript -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/weather.js"></script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="page-header">
+  <h1>Umbrella<small> should I bring it?</small></h1>
+</div>
+
+<!-- Body -->
+<div class="container">
+  <div class="row animated-row">
+    <!-- Form page -->
+    <div id="page-form" class="span12">
+      <h2>Information</h2>
+      <form id="form" role="form" action="javascript:send_form()">
+        <fieldset>
+          <div class="form-group">
+            <label for="city">City name</label>
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Your city goes here" name="city" id="city" required>
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button" onclick="setCityByGeolocation()"><span style="line-height: 1.5 !important;"  class="glyphicon glyphicon-map-marker"></span></button>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="hourse">Hours outside</label>
+            <input type="number" class="form-control" name="hours" id="hours" min="1" max="48" value="8" required>
+          </div>
+          <button type="submit" class="btn btn-default btn-info">Should I?</button>
+        </fieldset>
+      </form>
+
+      <!-- Loading -->
+      <div id="loading-container" class="hidden">
+        <div class="loader">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Response page -->
+    <div id="page-response" class="span0">
+      <div id="response-container">
+        <div id="response"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer 
+<footer class="footer">
+  <p>Click <a href="http://portfolio.danielherzog.es">here</a> to know more about me!</p>
+</footer>-->
+
+<!-- JS -->
+<script type="text/javascript">
+  function send_form() {
+    var city = $('#city').val();
+    var hours = $('#hours').val();
+    
+    var posible_responses = {
+      "none": ["Nope.", "img/umbrella_none.png"],
+      "low":  ["Yes, you should!", "img/umbrella_low.png"],
+      "med":  ["Absolutely!", "img/umbrella_med.png"],
+      "full": ["You MUST take it!!", "img/umbrella_full.png"]
+    }
+
+    $('#loading-container').removeClass('hidden');
+    $('#form-container').addClass('hidden');
+  
+    WeatherApp.submit(city, hours, function(should_i_level, data) {
+      lockForm(true);
+      
+      var response = null;
+      if(should_i_level <= 0)                                response = posible_responses["none"];
+      else if(should_i_level > 0.0 && should_i_level <= 0.3) response = posible_responses["low"];
+      else if(should_i_level > 0.3 && should_i_level <= 0.6) response = posible_responses["med"];
+      else if(should_i_level > 0.6)                          response = posible_responses["full"];
+      
+      var temp_icon = 'img/' + (data.avg_temp < 25 ? 'cold' : 'hot') + '.png';
+
+      $('#response').html(
+        "<h2>" + response[0] + "</h2>" +
+        "<img class='rain-icon' src='" + response[1] + "'/>" +
+        "<table><tr>" +
+          "<td>" +
+            "<h3>Temperatures</h3>" +
+            "<ul>" +
+              "<li><label class='temp-label'>Max:</label>" + Math.round(data.max_temp) +
+              "<li><label class='temp-label'>Min:</label>" + Math.round(data.min_temp) +
+              "<li><label class='temp-label'>Average:</label>" + Math.round(data.avg_temp) +
+            "</ul>" +
+          "</td>" +
+          "<td>" +
+            "<img class='temp-icon' src='" + temp_icon + "' />" +
+          "</td>" +
+        "</tr></table>"
+      );
+      
+      // Animate
+      $('#page-form').toggleClass('span12 span0');
+      $('#page-response').toggleClass('span0 span12');
+
+    }, ajaxError);
+  };
+  
+  function setCityByGeolocation() {
+    lockForm(true);
+    $.getJSON('http://ip-api.com/json', function(result) {
+      lockForm(false);
+      $('#city').val(result.city);
+    }).error(ajaxError);
+  }
+  
+  function ajaxError(jqXHR, textStatus, errorThrown) {
+    // Setup msg 
+    var msg = 'Error ' + jqXHR.status + ':\n';
+    if (jqXHR.status === 0) {
+      msg += '  Not connected.\n  Verify your Network.';
+    } else if (jqXHR.status == 404) {
+      msg += '  Requested page was not found.';
+    } else if (jqXHR.status == 500) {
+      msg += '  Internal Server Error.';
+    } else if (exception === 'parsererror') {
+      msg += '  Requested JSON parse failed.';
+    } else if (exception === 'timeout') {
+      msg += '  Time out error.';
+    } else if (exception === 'abort') {
+      msg += '  Ajax request aborted.';
+    } else {
+      msg += '  Uncaught Error.\n  ' + jqXHR.responseText;
+    }
+
+    lockForm(false);
+
+    // Show modal
+    $('#error-modal-content').text(msg);
+    $('#error-modal').modal('show');
+  }
+  
+  function lockForm(lock) {
+    if(lock) {
+      $('#loading-container').removeClass('hidden');
+      $('fieldset').attr('disabled', true);
+    }
+    else {
+      $('#loading-container').addClass('hidden');
+      $('fieldset').attr('disabled', false);
+    }
+  }
+</script>
+
+<!-- Modal -->
+<div class="modal fade" id="error-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Oops!</h4>
+      </div>
+      <div class="modal-body">
+        <p>Something went wrong!</p>
+        <p><pre id="error-modal-content"></pre></p>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+  
+</body>
+</html>
