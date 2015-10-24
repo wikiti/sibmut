@@ -8,6 +8,12 @@ Test the live demo in [Heroku](http://sibmut.herokuapp.com/ "sibmut-app").
 ## 2. Usage ##
 Just open *index.html* in a web-browser, or in a server.
 
+Also, you may want to run it as a rack application, like so:
+````sh
+bundle install
+rackup
+````
+
 ## 3. Authors ##
 
 This project has been developed by:
