@@ -6,8 +6,9 @@ var WeatherApp = (function() {
     this.API_BASE = "http://api.openweathermap.org/data/2.5";
     
     this.FORECAST_SAMPLE = 3;
-    this.RAIN_KEYWORD = "Rain";
-    this.SNOW_KEYWORD = "Snow";
+    this.RAIN_KEYWORD = "rain";
+    this.SNOW_KEYWORD = "snow";
+    this.DRIZZLE_KEYWORD = "drizzle";
     
     this.country_code = "";
   };
@@ -44,7 +45,16 @@ var WeatherApp = (function() {
       });
     });
   };
-  
+
+  WeatherClass.prototype.add_sil = function(subsample, current_level) {
+    var text = subsample.main.toLowerCase();
+    // Check for rain
+    if(text.indexOf(this.RAIN_KEYWORD) > -1 || text.indexOf(this.SNOW_KEYWORD) > -1 || text.indexOf(this.DRIZZLE_KEYWORD) > -1) 
+      current_level++;
+    
+    return current_level;
+  }
+
   WeatherClass.prototype.submit = function(city_name, hours_outside, success_callback, error_callback) {
     var self = this;
 
@@ -64,10 +74,7 @@ var WeatherApp = (function() {
         for(var j in sample.weather) {
           var subsample = sample.weather[j];
 
-          // Check for rain
-          if(subsample.main.indexOf(self.RAIN_KEYWORD) > -1) should_i_level++;
-          // Check for snow
-          else if(subsample.main.indexOf(self.SNOW_KEYWORD) > -1) should_i_level++;
+          should_i_level = self.add_sil(subsample, should_i_level);
 
           // Save temperatures
           max_temp = Math.max(max_temp, self.convert_temperature(sample.main.temp_max));
